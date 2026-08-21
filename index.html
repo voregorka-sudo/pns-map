@@ -665,17 +665,31 @@
                                         let colMap = { alliance: -1, nickname: -1, lvl: -1, quantity: -1 };
                                         let headerRowIdx = -1;
                                         
-                                        for (let r3 = r2 + 1; r3 < rows.length && r3 <= r2 + 3; r3++) {
-                                            const row3 = rows[r3] || [];
-                                            let foundAnyHeader = false;
-                                            for (let c3 = Math.max(0, c - 2); c3 <= c + 5; c3++) {
-                                                const headerVal = String(row3[c3] || '').trim().toLowerCase();
-                                                if (headerVal.includes('alliance')) { colMap.alliance = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('nickname')) { colMap.nickname = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('lvl') || headerVal.includes('level')) { colMap.lvl = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('quantity') || headerVal.includes('size')) { colMap.quantity = c3; foundAnyHeader = true; }
-                                            }
-                                            if (foundAnyHeader) { headerRowIdx = r3; break; }
+                                       for (let r3 = r2 + 1; r3 < rows.length && r3 <= r2 + 3; r3++) {
+    const row3 = rows[r3] || [];
+    let foundAnyHeader = false;
+    for (let c3 = Math.max(0, c - 2); c3 <= c + 5; c3++) {
+        const headerVal = String(row3[c3] || '').trim().toLowerCase();
+        const dist = Math.abs(c3 - c); // расстояние от маркера смены
+        if (headerVal.includes('alliance')) {
+            if (colMap.alliance === -1 || dist < Math.abs(colMap.alliance - c)) colMap.alliance = c3;
+            foundAnyHeader = true;
+        }
+        else if (headerVal.includes('nickname')) {
+            if (colMap.nickname === -1 || dist < Math.abs(colMap.nickname - c)) colMap.nickname = c3;
+            foundAnyHeader = true;
+        }
+        else if (headerVal.includes('lvl') || headerVal.includes('level')) {
+            if (colMap.lvl === -1 || dist < Math.abs(colMap.lvl - c)) colMap.lvl = c3;
+            foundAnyHeader = true;
+        }
+        else if (headerVal.includes('quantity') || headerVal.includes('size')) {
+            if (colMap.quantity === -1 || dist < Math.abs(colMap.quantity - c)) colMap.quantity = c3;
+            foundAnyHeader = true;
+        }
+    }
+    if (foundAnyHeader) { headerRowIdx = r3; break; }
+}
                                         }
 
                                         if (headerRowIdx === -1) {
