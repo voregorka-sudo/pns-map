@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Puzzles & Survival - Интерактивная схема</title>
     <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- ExcelJS — для раскрывающихся списков и условного форматирования в шаблоне -->
+    <script src="https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -16,26 +18,25 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        /* ===== ИЗМЕНЕНО: убран background-image, оставлен только цвет-фолбэк ===== */
         body {
             color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow-x: hidden;
             padding-bottom: 50px;
             min-height: 100vh;
-            background-color: var(--bg-color); /* Падёж на случай медленной загрузки видео */
+            background-color: var(--bg-color);
         }
 
-        /* ===== НОВОЕ: зацикленное видео на весь экран ===== */
+        /* Зацикленное видео на весь экран */
         .video-background {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Растягивает видео на весь экран (как background-size: cover) */
+            object-fit: cover;
             z-index: -1;
-            pointer-events: none; /* Видео не перехватывает клики */
+            pointer-events: none;
         }
 
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(26, 29, 36, 0.85); backdrop-filter: blur(6px); border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; gap: 10px; flex-wrap: wrap; }
@@ -60,6 +61,37 @@
         .shift-menu { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 5px; background: var(--panel-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 5px; display: flex; gap: 5px; z-index: 10; display: none; }
         .shift-menu button { background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .shift-menu button:hover { background: var(--accent); color: #000; }
+
+        /* ===== ИЗМЕНЕНО: оранжевые квадратные кнопки на карте ===== */
+        .map-btn {
+            position: absolute;
+            width: 8%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: var(--accent); /* оранжевый фон */
+            border: 2px solid #b87d00; /* тёмно-оранжевая рамка */
+            border-radius: 12px;
+            color: #000; /* чёрный текст для контраста */
+            font-family: inherit;
+            font-weight: bold;
+            font-size: clamp(8px, 0.9vw, 12px);
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 6;
+            padding: 2px;
+            overflow-wrap: break-word;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        .map-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 0 15px rgba(255, 179, 0, 0.5); }
+        .map-btn.active { border-color: #fff; box-shadow: 0 0 20px var(--accent-hover); }
+
+        /* Позиции кнопок */
+        .rules-btn-map { bottom: 10%; right: 10%; }
+        .alliances-btn-map { top: 10%; left: 10%; }
+        .search-btn-map { top: 10%; right: 10%; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; padding: 10px; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
@@ -78,6 +110,37 @@
         .empty-list { text-align: center; color: #888; padding: 20px; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: #fff; padding: 12px 24px; border-radius: 8px; transition: 0.4s; z-index: 300; }
         .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .rules-text { white-space: pre-wrap; word-wrap: break-word; line-height: 1.7; font-size: 14px; }
+
+        /* Элементы списка альянсов — 3 кнопки копирования */
+        .alliance-item { border-left: 3px solid transparent; transition: background 0.2s, border-color 0.2s; }
+        .alliance-item:hover { background: #2a2a2a; border-left-color: var(--accent); }
+        .alliance-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .alliance-btns { display: flex; gap: 5px; }
+        .alliance-copy-btn {
+            flex: 1;
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 6px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            font-weight: bold;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .alliance-copy-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        /* ПОИСК — оформление */
+        .search-result-item { cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
+        .search-result-item:hover { background: #2a2a2a; border-left-color: var(--accent); }
+        .search-highlight { background: rgba(255, 179, 0, 0.35); color: #fff; font-weight: bold; border-radius: 2px; }
+        #search-input { margin-bottom: 10px; font-size: 15px; }
         
         .admin-panel { margin: 20px; padding: 20px; background: rgba(26, 29, 36, 0.9); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .admin-section { margin-bottom: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 6px; background: rgba(0,0,0,0.2); }
@@ -92,13 +155,9 @@
 </head>
 <body>
 
-<!-- ===== НОВОЕ: зацикленное видео на заднем фоне =====
-     Замените Back.mp4 на имя вашего файла.
-     poster="Back.png" — показ старой картинки, пока видео грузится -->
+<!-- Видеофон (зациклен, без звука) -->
 <video class="video-background" id="bg-video" autoplay loop muted playsinline preload="auto" poster="Back.png" disablepictureinpicture>
-    <source src="Back.mp4" type="video/mp4">
-    <!-- Опционально: запасной формат для старых браузеров -->
-    <!-- <source src="Back.webm" type="video/webm"> -->
+    <source src="back.mp4" type="video/mp4">
 </video>
 
 <header>
@@ -133,6 +192,11 @@
             <img src="" class="troop-badge" id="badge-east" style="display: none;">
             <span class="object-label" data-i18n="east">Восточная турель</span>
         </div>
+
+        <!-- Оранжевые квадратные кнопки на карте -->
+        <button id="alliances-btn" class="map-btn alliances-btn-map" onclick="openAlliances()" data-i18n="alliances">Альянсы</button>
+        <button id="search-btn" class="map-btn search-btn-map" onclick="openSearch()" data-i18n="search">Поиск</button>
+        <button id="rules-btn" class="map-btn rules-btn-map" onclick="openRules()" data-i18n="rules">Правила</button>
     </div>
 
     <div class="modal-overlay" id="list-modal">
@@ -143,6 +207,33 @@
                 <button class="btn btn-primary" id="btn-copy-list" data-i18n="copy_list">Копировать список</button>
                 <button class="btn" id="btn-copy-both" data-i18n="copy_both">Копировать обе смены</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Окно «Альянсы» -->
+    <div class="modal-overlay" id="alliances-modal">
+        <div class="modal-box">
+            <div class="modal-header"><h3 data-i18n="alliances_title">Альянсы</h3><button class="close-btn" onclick="closeModal('alliances-modal')">×</button></div>
+            <div class="modal-body" id="alliances-body"></div>
+        </div>
+    </div>
+
+    <!-- Окно «Поиск» -->
+    <div class="modal-overlay" id="search-modal">
+        <div class="modal-box">
+            <div class="modal-header"><h3 data-i18n="search_title">Поиск игрока</h3><button class="close-btn" onclick="closeModal('search-modal')">×</button></div>
+            <div class="modal-body">
+                <input type="text" id="search-input" class="admin-input" placeholder="Введите никнейм..." oninput="performSearch()">
+                <div id="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно «Правила» -->
+    <div class="modal-overlay" id="rules-modal">
+        <div class="modal-box">
+            <div class="modal-header"><h3 data-i18n="rules_title">Правила</h3><button class="close-btn" onclick="closeModal('rules-modal')">×</button></div>
+            <div class="modal-body" id="rules-body"></div>
         </div>
     </div>
 
@@ -176,6 +267,29 @@
             <input type="file" id="excel-upload" accept=".xlsx,.csv" style="display:none" onchange="handleExcelUpload(event)">
         </div>
         <div id="admin-content"></div>
+
+        <!-- Редактор правил в админ-панели -->
+        <div class="admin-section">
+            <h3 style="margin-bottom:10px; color:var(--accent);" data-i18n="rules_editor_title">Текст правил</h3>
+            <p style="font-size:12px; color:#888; margin-bottom:10px;">Отдельный текст для каждого языка. Сохранение — автоматически при выходе из поля (клик вне текста).</p>
+            <div style="margin-bottom:10px;">
+                <strong style="display:block; margin-bottom:5px;">🇷🇺 Русский:</strong>
+                <textarea id="rules-ru" class="admin-input" rows="5" style="resize:vertical;" placeholder="Текст правил на русском..." onchange="saveRules()"></textarea>
+            </div>
+            <div style="margin-bottom:10px;">
+                <strong style="display:block; margin-bottom:5px;">🇬🇧 English:</strong>
+                <textarea id="rules-en" class="admin-input" rows="5" style="resize:vertical;" placeholder="Rules text in English..." onchange="saveRules()"></textarea>
+            </div>
+            <div style="margin-bottom:10px;">
+                <strong style="display:block; margin-bottom:5px;">🇰🇷 한국어:</strong>
+                <textarea id="rules-ko" class="admin-input" rows="5" style="resize:vertical;" placeholder="규칙 텍스트..." onchange="saveRules()"></textarea>
+            </div>
+            <div style="margin-bottom:0;">
+                <strong style="display:block; margin-bottom:5px;">🇯🇵 日本語:</strong>
+                <textarea id="rules-ja" class="admin-input" rows="5" style="resize:vertical;" placeholder="ルールのテキスト..." onchange="saveRules()"></textarea>
+            </div>
+        </div>
+
         <div class="danger-zone">
             <h3 style="color:var(--danger);" data-i18n="danger_zone">Опасная зона</h3><br>
             <button class="btn btn-danger" onclick="initiateDeleteAll()" data-i18n="delete_all">Удалить все списки</button>
@@ -219,6 +333,8 @@
             { id: 'east', name_ru: 'Восточная турель', name_en: 'East Turret', name_ko: '동부 포탑', name_ja: '東タレット', tag: '' }
         ];
 
+        const rulesLangs = ['ru', 'en', 'ko', 'ja'];
+
         function toArray(obj) {
             if (Array.isArray(obj)) return obj;
             if (obj && typeof obj === 'object') return Object.keys(obj).map(k => obj[k]);
@@ -229,6 +345,10 @@
             if (!data || typeof data !== 'object') data = {};
             if (!data.objects) data.objects = [];
             data.objects = toArray(data.objects);
+
+            if (!data.rules || typeof data.rules !== 'object') data.rules = {};
+            rulesLangs.forEach(l => { if (typeof data.rules[l] !== 'string') data.rules[l] = ''; });
+
             defaults.forEach(def => {
                 let obj = data.objects.find(o => o.id === def.id);
                 if (!obj) {
@@ -254,10 +374,10 @@
         let activeShift = null;
 
         const i18n = {
-            ru: { tech: 'Техноцентр', north: 'Северная турель', south: 'Южная турель', west: 'Западная турель', east: 'Восточная турель', shift1: 'Смена 1', shift2: 'Смена 2', copy_list: 'Копировать список', copy_both: 'Копировать обе смены', list_copied: '✓ Список скопирован!', both_copied: '✓ Обе смены скопированы!', empty: 'Список пуст', login: 'Войти', logout: 'Выйти', login_title: 'Вход администратора', cancel: 'Отмена', delete: 'Удалить', confirm: 'Подтвердить', admin_panel: 'Административная панель', download_template: 'Скачать шаблон Excel', import_excel: 'Импорт из Excel', danger_zone: 'Опасная зона', delete_all: 'Удалить все списки', add_row: '+ Добавить строку', del_shift1: 'Удалить Смену 1', del_shift2: 'Удалить Смену 2', select_type: 'Тип войск (всегда англ.)' },
-            en: { tech: 'Tech Center', north: 'North Turret', south: 'South Turret', west: 'West Turret', east: 'East Turret', shift1: 'Shift 1', shift2: 'Shift 2', copy_list: 'Copy list', copy_both: 'Copy both shifts', list_copied: '✓ List copied!', both_copied: '✓ Both shifts copied!', empty: 'List is empty', login: 'Log in', logout: 'Log out', login_title: 'Administrator Login', cancel: 'Cancel', delete: 'Delete', confirm: 'Confirm', admin_panel: 'Admin Panel', download_template: 'Download Excel template', import_excel: 'Import from Excel', danger_zone: 'Danger Zone', delete_all: 'Delete all lists', add_row: '+ Add row', del_shift1: 'Delete Shift 1', del_shift2: 'Delete Shift 2', select_type: 'Troop Type (EN only)' },
-            ko: { tech: '테크 센터', north: '북부 포탑', south: '남부 포탑', west: '서부 포탑', east: '동부 포탑', shift1: '교대 1', shift2: '교대 2', copy_list: '목록 복사', copy_both: '두 교대 모두 복사', list_copied: '✓ 목록이 복사되었습니다!', both_copied: '✓ 두 교대 모두 복사되었습니다!', empty: '목록이 비어 있습니다', login: '로그인', logout: '로그아웃', login_title: '관리자 로그인', cancel: '취소', delete: '삭제', confirm: '확인', admin_panel: '관리 패널', download_template: 'Excel 템플릿 다운로드', import_excel: 'Excel에서 가져오기', danger_zone: '위험 구역', delete_all: '모든 목록 삭제', add_row: '+ 행 추가', del_shift1: '교대 1 삭제', del_shift2: '교대 2 삭제', select_type: '병력 유형 (영어 전용)' },
-            ja: { tech: 'テックセンター', north: '北タレット', south: '南タレット', west: '西タレット', east: '東タレット', shift1: 'シフト 1', shift2: 'シフト 2', copy_list: 'リストをコピー', copy_both: '両方のシフトをコピー', list_copied: '✓ リストがコピーされました！', both_copied: '✓ 両方のシフトがコピーされました！', empty: 'リストは空です', login: 'ログイン', logout: 'ログアウト', login_title: '管理者ログイン', cancel: 'キャンセル', delete: '削除', confirm: '確認', admin_panel: '管理パネル', download_template: 'Excelテンプレートをダウンロード', import_excel: 'Excelからインポート', danger_zone: '危険区域', delete_all: 'すべてのリストを削除', add_row: '+ 行を追加', del_shift1: 'シフト1を削除', del_shift2: 'シフト2を削除', select_type: '部隊タイプ (英語のみ)' }
+            ru: { tech: 'Техноцентр', north: 'Северная турель', south: 'Южная турель', west: 'Западная турель', east: 'Восточная турель', shift1: 'Смена 1', shift2: 'Смена 2', copy_list: 'Копировать список', copy_both: 'Копировать обе смены', list_copied: '✓ Список скопирован!', both_copied: '✓ Обе смены скопированы!', empty: 'Список пуст', login: 'Войти', logout: 'Выйти', login_title: 'Вход администратора', cancel: 'Отмена', delete: 'Удалить', confirm: 'Подтвердить', admin_panel: 'Административная панель', download_template: 'Скачать шаблон Excel', import_excel: 'Импорт из Excel', danger_zone: 'Опасная зона', delete_all: 'Удалить все списки', add_row: '+ Добавить строку', del_shift1: 'Удалить Смену 1', del_shift2: 'Удалить Смену 2', select_type: 'Тип войск (всегда англ.)', rules: 'Правила', rules_title: 'Правила', rules_empty: 'Правила пока не добавлены', rules_editor_title: 'Текст правил', rules_saved: '✓ Правила сохранены!', alliances: 'Альянсы', alliances_title: 'Альянсы', alliances_empty: 'Альянсы не найдены', alliances_found: 'Найдено альянсов', alliances_hint: 'Выберите смену, чтобы скопировать списки игроков альянса', alliance_label: 'Альянс', alliance_copied: '✓ Списки альянса скопированы!', players_count: 'игроков', both_shifts: 'Обе смены', search: 'Поиск', search_title: 'Поиск игрока', search_placeholder: 'Введите никнейм...', search_no_results: 'Ничего не найдено', search_found: 'Найдено', search_hint_click: 'Нажмите на результат, чтобы скопировать игрока', search_copied: '✓ Игрок скопирован!' },
+            en: { tech: 'Tech Center', north: 'North Turret', south: 'South Turret', west: 'West Turret', east: 'East Turret', shift1: 'Shift 1', shift2: 'Shift 2', copy_list: 'Copy list', copy_both: 'Copy both shifts', list_copied: '✓ List copied!', both_copied: '✓ Both shifts copied!', empty: 'List is empty', login: 'Log in', logout: 'Log out', login_title: 'Administrator Login', cancel: 'Cancel', delete: 'Delete', confirm: 'Confirm', admin_panel: 'Admin Panel', download_template: 'Download Excel template', import_excel: 'Import from Excel', danger_zone: 'Danger Zone', delete_all: 'Delete all lists', add_row: '+ Add row', del_shift1: 'Delete Shift 1', del_shift2: 'Delete Shift 2', select_type: 'Troop Type (EN only)', rules: 'Rules', rules_title: 'Rules', rules_empty: 'Rules have not been added yet', rules_editor_title: 'Rules text', rules_saved: '✓ Rules saved!', alliances: 'Alliances', alliances_title: 'Alliances', alliances_empty: 'No alliances found', alliances_found: 'Alliances found', alliances_hint: 'Select a shift to copy the alliance player lists', alliance_label: 'Alliance', alliance_copied: '✓ Alliance lists copied!', players_count: 'players', both_shifts: 'Both shifts', search: 'Search', search_title: 'Player Search', search_placeholder: 'Enter nickname...', search_no_results: 'Nothing found', search_found: 'Found', search_hint_click: 'Click a result to copy the player', search_copied: '✓ Player copied!' },
+            ko: { tech: '테크 센터', north: '북부 포탑', south: '남부 포탑', west: '서부 포탑', east: '동부 포탑', shift1: '교대 1', shift2: '교대 2', copy_list: '목록 복사', copy_both: '두 교대 모두 복사', list_copied: '✓ 목록이 복사되었습니다!', both_copied: '✓ 두 교대 모두 복사되었습니다!', empty: '목록이 비어 있습니다', login: '로그인', logout: '로그아웃', login_title: '관리자 로그인', cancel: '취소', delete: '삭제', confirm: '확인', admin_panel: '관리 패널', download_template: 'Excel 템플릿 다운로드', import_excel: 'Excel에서 가져오기', danger_zone: '위험 구역', delete_all: '모든 목록 삭제', add_row: '+ 행 추가', del_shift1: '교대 1 삭제', del_shift2: '교대 2 삭제', select_type: '병력 유형 (영어 전용)', rules: '규칙', rules_title: '규칙', rules_empty: '규칙이 아직 추가되지 않았습니다', rules_editor_title: '규칙 텍스트', rules_saved: '✓ 규칙이 저장되었습니다!', alliances: '동맹', alliances_title: '동맹', alliances_empty: '동맹을 찾을 수 없습니다', alliances_found: '발견된 동맹', alliances_hint: '교대를 선택하면 해당 동맹 플레이어 목록이 복사됩니다', alliance_label: '동맹', alliance_copied: '✓ 동맹 목록이 복사되었습니다!', players_count: '명', both_shifts: '두 교대 모두', search: '검색', search_title: '플레이어 검색', search_placeholder: '닉네임을 입력하세요...', search_no_results: '결과가 없습니다', search_found: '결과', search_hint_click: '결과를 클릭하면 플레이어가 복사됩니다', search_copied: '✓ 플레이어가 복사되었습니다!' },
+            ja: { tech: 'テックセンター', north: '北タレット', south: '南タレット', west: '西タレット', east: '東タレット', shift1: 'シフト 1', shift2: 'シフト 2', copy_list: 'リストをコピー', copy_both: '両方のシフトをコピー', list_copied: '✓ リストがコピーされました！', both_copied: '✓ 両方のシフトがコピーされました！', empty: 'リストは空です', login: 'ログイン', logout: 'ログアウト', login_title: '管理者ログイン', cancel: 'キャンセル', delete: '削除', confirm: '確認', admin_panel: '管理パネル', download_template: 'Excelテンプレートをダウンロード', import_excel: 'Excelからインポート', danger_zone: '危険区域', delete_all: 'すべてのリストを削除', add_row: '+ 行を追加', del_shift1: 'シフト1を削除', del_shift2: 'シフト2を削除', select_type: '部隊タイプ (英語のみ)', rules: 'ルール', rules_title: 'ルール', rules_empty: 'ルールはまだ追加されていません', rules_editor_title: 'ルールのテキスト', rules_saved: '✓ ルールが保存されました！', alliances: '同盟', alliances_title: '同盟', alliances_empty: '同盟が見つかりません', alliances_found: '見つかった同盟', alliances_hint: 'シフトを選ぶとその同盟のプレイヤーリストがコピーされます', alliance_label: '同盟', alliance_copied: '✓ 同盟のリストがコピーされました！', players_count: '人', both_shifts: '両方のシフト', search: '検索', search_title: 'プレイヤー検索', search_placeholder: 'ニックネームを入力...', search_no_results: '見つかりませんでした', search_found: '検索結果', search_hint_click: '結果をクリックするとプレイヤーがコピーされます', search_copied: '✓ プレイヤーがコピーされました！' }
         };
 
         function formatListForCopy(arr) {
@@ -323,9 +443,294 @@
             document.getElementById('btn-ko').classList.toggle('active', currentLang === 'ko');
             document.getElementById('btn-ja').classList.toggle('active', currentLang === 'ja');
             document.getElementById('admin-btn').innerText = isAdmin ? i18n[currentLang].logout : i18n[currentLang].login;
+            // Плейсхолдер поля поиска переводится отдельно
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.placeholder = i18n[currentLang].search_placeholder;
         }
 
-        function setLang(lang) { currentLang = lang; setLocalData('lang', lang); applyTranslations(); if (activeObjectId) openListModal(activeObjectId, activeShift); }
+        function getRulesText() {
+            const r = appData.rules || {};
+            const chain = [currentLang, 'ru', 'en', 'ko', 'ja'];
+            for (const l of chain) {
+                if (r[l] && r[l].trim() !== '') return r[l];
+            }
+            return '';
+        }
+
+        function openRules() {
+            const btn = document.getElementById('rules-btn');
+            if (btn) btn.classList.add('active');
+            const body = document.getElementById('rules-body');
+            const text = getRulesText();
+            if (text === '') {
+                body.innerHTML = `<p class="empty-list">${i18n[currentLang].rules_empty}</p>`;
+            } else {
+                body.innerHTML = `<div class="rules-text">${escapeHtml(text)}</div>`;
+            }
+            document.getElementById('rules-modal').classList.add('active');
+        }
+
+        // ===== АЛЬЯНСЫ =====
+        // Альянс = первая часть записи до дефиса (формат: Альянс-Ник-Уровень-Кол-во).
+        function getAlliancesMap() {
+            const map = {};
+            appData.objects.forEach(obj => {
+                ['shift1', 'shift2'].forEach(shift => {
+                    (obj[shift] || []).forEach(entry => {
+                        const alliance = String(entry).split('-')[0].trim();
+                        if (!alliance) return;
+                        if (!map[alliance]) map[alliance] = { shift1: 0, shift2: 0, total: 0 };
+                        map[alliance][shift]++;
+                        map[alliance].total++;
+                    });
+                });
+            });
+            return map;
+        }
+
+        function openAlliances() {
+            const btn = document.getElementById('alliances-btn');
+            if (btn) btn.classList.add('active');
+            const body = document.getElementById('alliances-body');
+            const map = getAlliancesMap();
+            const names = Object.keys(map);
+
+            body.innerHTML = '';
+
+            if (names.length === 0) {
+                body.innerHTML = `<p class="empty-list">${i18n[currentLang].alliances_empty}</p>`;
+            } else {
+                // Сортировка: сначала альянсы с большим числом игроков, затем по алфавиту
+                names.sort((a, b) => map[b].total - map[a].total || a.localeCompare(b));
+
+                const info = document.createElement('p');
+                info.style.cssText = 'text-align:center; color:#888; font-size:13px; margin-bottom:6px;';
+                info.innerText = `${i18n[currentLang].alliances_found}: ${names.length}`;
+                body.appendChild(info);
+
+                const hint = document.createElement('p');
+                hint.style.cssText = 'text-align:center; color:#666; font-size:11px; margin-bottom:10px;';
+                hint.innerText = i18n[currentLang].alliances_hint;
+                body.appendChild(hint);
+
+                names.forEach(name => {
+                    const counts = map[name];
+                    const item = document.createElement('div');
+                    item.className = 'list-item alliance-item';
+
+                    // Строка: имя альянса + общее число игроков
+                    const header = document.createElement('div');
+                    header.className = 'alliance-item-header';
+                    const nameSpan = document.createElement('strong');
+                    nameSpan.innerText = name;
+                    const countSpan = document.createElement('span');
+                    countSpan.style.cssText = 'color:#888; font-size:12px; flex-shrink:0; margin-left:10px;';
+                    countSpan.innerText = `${counts.total} ${i18n[currentLang].players_count}`;
+                    header.appendChild(nameSpan);
+                    header.appendChild(countSpan);
+                    item.appendChild(header);
+
+                    // Ряд из 3 кнопок: Смена 1 | Смена 2 | Обе смены
+                    const btnsRow = document.createElement('div');
+                    btnsRow.className = 'alliance-btns';
+
+                    const mkBtn = (label, filter) => {
+                        const b = document.createElement('button');
+                        b.className = 'alliance-copy-btn';
+                        b.innerText = label;
+                        b.onclick = () => copyAllianceLists(name, filter);
+                        return b;
+                    };
+
+                    btnsRow.appendChild(mkBtn(`${i18n[currentLang].shift1} (${counts.shift1})`, 'shift1'));
+                    btnsRow.appendChild(mkBtn(`${i18n[currentLang].shift2} (${counts.shift2})`, 'shift2'));
+                    btnsRow.appendChild(mkBtn(i18n[currentLang].both_shifts, 'both'));
+
+                    item.appendChild(btnsRow);
+                    body.appendChild(item);
+                });
+            }
+            document.getElementById('alliances-modal').classList.add('active');
+        }
+
+        // Копирование альянса с фильтром по смене: 'shift1' | 'shift2' | 'both'
+        function copyAllianceLists(alliance, shiftFilter) {
+            try {
+                const shifts = shiftFilter === 'both' ? ['shift1', 'shift2'] : [shiftFilter];
+                const sections = [];
+                let total = 0;
+
+                appData.objects.forEach(obj => {
+                    shifts.forEach(shift => {
+                        const arr = obj[shift] || [];
+                        const lines = [];
+                        arr.forEach((entry, idx) => {
+                            const a = String(entry).split('-')[0].trim();
+                            if (a === alliance) {
+                                let line = `${lines.length + 1}. ${entry}`;
+                                if (idx === 0) line += ' (cap)';
+                                else if (idx === 1) line += ' (sub)';
+                                lines.push(line);
+                            }
+                        });
+                        if (lines.length > 0) {
+                            let header = `${obj['name_' + currentLang]} — ${i18n[currentLang][shift]}`;
+                            if (obj.tag) header += ` — ${obj.tag}`;
+                            sections.push(`[${header}]\n${lines.join('\n')}`);
+                            total += lines.length;
+                        }
+                    });
+                });
+
+                if (total === 0) { showToast(i18n[currentLang].empty); return; }
+
+                let title = `${i18n[currentLang].alliance_label}: ${alliance} (${total})`;
+                if (shiftFilter === 'shift1') title += ` — ${i18n[currentLang].shift1}`;
+                else if (shiftFilter === 'shift2') title += ` — ${i18n[currentLang].shift2}`;
+
+                const text = `${title}\n\n${sections.join('\n\n')}`;
+                copyText(text, i18n[currentLang].alliance_copied);
+            } catch(e) { alert('Ошибка при копировании альянса: ' + e.message); }
+        }
+
+        // ===== ПОИСК =====
+        function openSearch() {
+            const btn = document.getElementById('search-btn');
+            if (btn) btn.classList.add('active');
+            document.getElementById('search-modal').classList.add('active');
+            const input = document.getElementById('search-input');
+            if (input) {
+                performSearch(); // показать результаты прошлого запроса, если были
+                setTimeout(() => { try { input.focus(); } catch(e) {} }, 100);
+            }
+        }
+
+        // Нормализация Unicode (NFC) + регистронезависимость.
+        // Поддерживает кириллицу, латиницу, корейский, японский, символы и эмодзи.
+        function normSearch(s) {
+            s = String(s);
+            try { s = s.normalize('NFC'); } catch (e) {}
+            return s.toLowerCase();
+        }
+
+        // Подсветка найденного фрагмента (безопасно: части экранируются отдельно)
+        function highlightMatch(entry, query) {
+            const lowerEntry = entry.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            const idx = lowerEntry.indexOf(lowerQuery);
+            if (idx === -1) return escapeHtml(entry);
+            return escapeHtml(entry.substring(0, idx)) +
+                '<span class="search-highlight">' + escapeHtml(entry.substring(idx, idx + query.length)) + '</span>' +
+                escapeHtml(entry.substring(idx + query.length));
+        }
+
+        // Живой поиск по мере ввода: по всем зданиям и обеим сменам
+        function performSearch() {
+            const input = document.getElementById('search-input');
+            const resultsDiv = document.getElementById('search-results');
+            if (!input || !resultsDiv) return;
+
+            const query = input.value.trim();
+            resultsDiv.innerHTML = '';
+            if (!query) return;
+
+            const nq = normSearch(query);
+            const results = [];
+
+            appData.objects.forEach(obj => {
+                ['shift1', 'shift2'].forEach(shift => {
+                    (obj[shift] || []).forEach((entry, idx) => {
+                        const e = String(entry);
+                        if (normSearch(e).includes(nq)) {
+                            results.push({ obj: obj, shift: shift, idx: idx, entry: e });
+                        }
+                    });
+                });
+            });
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `<p class="empty-list">${i18n[currentLang].search_no_results}</p>`;
+                return;
+            }
+
+            const info = document.createElement('p');
+            info.style.cssText = 'text-align:center; color:#888; font-size:13px; margin-bottom:6px;';
+            info.innerText = `${i18n[currentLang].search_found}: ${results.length}`;
+            resultsDiv.appendChild(info);
+
+            const hint = document.createElement('p');
+            hint.style.cssText = 'text-align:center; color:#666; font-size:11px; margin-bottom:10px;';
+            hint.innerText = i18n[currentLang].search_hint_click;
+            resultsDiv.appendChild(hint);
+
+            results.forEach(res => {
+                const item = document.createElement('div');
+                item.className = 'list-item search-result-item';
+
+                // Строка 1: где найден игрок (здание — смена — тэг) и позиция в списке
+                const meta = document.createElement('div');
+                meta.style.cssText = 'font-size:11px; color:#888; margin-bottom:3px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;';
+                let locName = `${res.obj['name_' + currentLang]} — ${i18n[currentLang][res.shift]}`;
+                if (res.obj.tag) locName += ` — ${res.obj.tag}`;
+                const locSpan = document.createElement('span');
+                locSpan.innerText = locName;
+                meta.appendChild(locSpan);
+
+                const posSpan = document.createElement('span');
+                posSpan.style.color = '#aaa';
+                posSpan.style.flexShrink = '0';
+                let posText = '#' + (res.idx + 1);
+                if (res.idx === 0) { posText += ' (cap)'; posSpan.style.color = 'var(--cap-color)'; posSpan.style.fontWeight = 'bold'; }
+                else if (res.idx === 1) { posText += ' (sub)'; posSpan.style.color = 'var(--sub-color)'; posSpan.style.fontWeight = 'bold'; }
+                posSpan.innerText = posText;
+                meta.appendChild(posSpan);
+                item.appendChild(meta);
+
+                // Строка 2: запись игрока с подсветкой совпадения
+                const entryDiv = document.createElement('div');
+                entryDiv.style.wordBreak = 'break-word';
+                entryDiv.innerHTML = highlightMatch(res.entry, query);
+                item.appendChild(entryDiv);
+
+                // ===== ИЗМЕНЕНО: копируется здание, смена, тип войск + запись игрока =====
+                item.onclick = () => {
+                    let loc = `${res.obj['name_' + currentLang]} — ${i18n[currentLang][res.shift]}`;
+                    if (res.obj.tag) loc += ` — ${res.obj.tag}`;
+                    let line = res.entry;
+                    if (res.idx === 0) line += ' (cap)';
+                    else if (res.idx === 1) line += ' (sub)';
+                    copyText(loc + '\n' + line, i18n[currentLang].search_copied);
+                };
+                resultsDiv.appendChild(item);
+            });
+        }
+
+        function renderRulesEditor() {
+            rulesLangs.forEach(lang => {
+                const ta = document.getElementById('rules-' + lang);
+                if (ta && document.activeElement !== ta) {
+                    ta.value = (appData.rules && appData.rules[lang]) || '';
+                }
+            });
+        }
+
+        function saveRules() {
+            if (!appData.rules) appData.rules = {};
+            rulesLangs.forEach(lang => {
+                const ta = document.getElementById('rules-' + lang);
+                if (ta) appData.rules[lang] = ta.value;
+            });
+            saveData();
+            showToast(i18n[currentLang].rules_saved);
+        }
+
+        function setLang(lang) {
+            currentLang = lang; setLocalData('lang', lang); applyTranslations();
+            if (activeObjectId) openListModal(activeObjectId, activeShift);
+            if (document.getElementById('rules-modal').classList.contains('active')) openRules();
+            if (document.getElementById('alliances-modal').classList.contains('active')) openAlliances();
+            if (document.getElementById('search-modal').classList.contains('active')) performSearch();
+        }
 
         function toggleShiftMenu(id) {
             const menu = document.querySelector(`.shift-menu[data-menu-for="${id}"]`);
@@ -376,7 +781,22 @@
         }
 
         function escapeHtml(text) { if (typeof text !== 'string') return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if (id === 'rules-modal') {
+                const btn = document.getElementById('rules-btn');
+                if (btn) btn.classList.remove('active');
+            }
+            if (id === 'alliances-modal') {
+                const btn = document.getElementById('alliances-btn');
+                if (btn) btn.classList.remove('active');
+            }
+            if (id === 'search-modal') {
+                const btn = document.getElementById('search-btn');
+                if (btn) btn.classList.remove('active');
+            }
+        }
 
         function fallbackCopy(text, successMsg) {
             const ta = document.createElement('textarea');
@@ -503,6 +923,7 @@
                     renderListInputs(obj.id, 'shift1');
                     renderListInputs(obj.id, 'shift2');
                 });
+                renderRulesEditor();
             } catch(e) { console.error("Render admin error:", e); }
         }
 
@@ -557,55 +978,127 @@
             newBtn.onclick = () => { if (requireText) { const val = document.getElementById('confirm-input').value; if (val !== 'УДАЛИТЬ') { alert('Неверное слово подтверждения'); return; } } callback(); closeModal('confirm-modal'); };
         }
 
+        // ===== Шаблон Excel: разметка эталонного файла + 30 пустых строк =====
+        // + раскрывающиеся списки (Rider/Shooter/Fighter) справа от каждого "-"
+        // + условное форматирование: пустая ячейка со списком залита красным
         function initTemplateDownload() {
             try {
-                const csvRows = [
-                    "Building,Tag,,,,,Building,Tag,,,,",
-                    "HUB,Rider,,,,,HUB,Rider,,,,",
-                    "1 shift,,,,,,2 shift,,,,",
-                    "alliance,Nickname,lvl,quantity,,,alliance,Nickname,lvl,quantity,,,",
-                    "ERA,Wer555,T10,281000,,,ERA,Terrorsathan,T10,143000,,,",
-                    ",,,,,,,,",
-                    "West,Rider,,,,,West,Rider,,,,",
-                    "1 shift,,,,,,2 shift,,,,",
-                    "alliance,Nickname,lvl,quantity,,,alliance,Nickname,lvl,quantity,,,",
-                    "TRK,munzur06,T9,132000,,,ALL,Neo,T10,238200,,,",
-                    ",,,,,,,,",
-                    "North,Shooter,,,,,North,Shooter,,,,",
-                    "1 shift,,,,,,2 shift,,,,",
-                    "alliance,Nickname,lvl,quantity,,,alliance,Nickname,lvl,quantity,,,",
-                    ",,,,,,,,",
-                    "South,Shooter,,,,,South,Shooter,,,,",
-                    "1 shift,,,,,,2 shift,,,,",
-                    "alliance,Nickname,lvl,quantity,,,alliance,Nickname,lvl,quantity,,,",
-                    ",,,,,,,,",
-                    "East,Rider,,,,,East,Rider,,,,",
-                    "1 shift,,,,,,2 shift,,,,",
-                    "alliance,Nickname,lvl,quantity,,,alliance,Nickname,lvl,quantity,,,"
+                const EMPTY_ROWS = 30;
+                const btn = document.getElementById('download-template-btn');
+                if (!btn) return;
+
+                // --- Структура секций (разметка не менялась) ---
+                const sec1Header = ["", "", "HUB", "-", "", "", "", "", "HUB", "-", "", "", "", "", "West", "-", "", "", "", "", "West", "-", ""];
+                const sec1Shifts = ["", "", "1 shift", "", "", "", "", "", "2 shift", "", "", "", "", "", "1 shift", "", "", "", "", "", "2 shift", "", ""];
+                const sec1Cols   = ["", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity"];
+
+                const sec2Header = ["", "", "North", "-", "", "", "", "", "North", "-", "", "", "", "", "East", "-", "", "", "", "", "East", "-", ""];
+                const sec2Shifts = ["", "", "1 shift", "", "", "", "", "", "2 shift", "", "", "", "", "", "1 shift", "", "", "", "", "", "2 shift", "", ""];
+                const sec2Cols   = ["", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity"];
+
+                const sec3Header = ["", "", "South", "-", "", "", "", "", "South", "-", ""];
+                const sec3Shifts = ["", "", "1 shift", "", "", "", "", "", "2 shift", "", ""];
+                const sec3Cols   = ["", "Alliance", "Nickname", "lvl", "quantity", "", "", "Alliance", "Nickname", "lvl", "quantity"];
+
+                const refRows = [
+                    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Rider", ""],
+                    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Shooter", ""],
+                    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Fighter", ""]
                 ];
 
-                let dataUri = '', filename = 'template.xlsx';
-                if (typeof XLSX !== 'undefined') {
+                // --- Сборка всех строк ---
+                const templateRows = [];
+                const sectionHeaderRows = [];
+
+                [[sec1Header, sec1Shifts, sec1Cols], [sec2Header, sec2Shifts, sec2Cols], [sec3Header, sec3Shifts, sec3Cols]].forEach(section => {
+                    sectionHeaderRows.push(templateRows.length);
+                    templateRows.push(section[0], section[1], section[2]);
+                    for (let i = 0; i < EMPTY_ROWS; i++) templateRows.push([]);
+                });
+                refRows.forEach(r => templateRows.push(r));
+
+                // --- Основной путь: ExcelJS (списки + условное форматирование) ---
+                if (typeof ExcelJS !== 'undefined') {
                     try {
-                        const templateData = csvRows.map(r => r.split(','));
-                        const ws = XLSX.utils.aoa_to_sheet(templateData);
-                        const wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, ws, 'Шаблон');
-                        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-                        dataUri = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
-                    } catch (e) { console.error("XLSX gen error", e); }
+                        const workbook = new ExcelJS.Workbook();
+                        const worksheet = workbook.addWorksheet('Лист1');
+                        templateRows.forEach(row => worksheet.addRow(row));
+
+                        let rulePriority = 1;
+
+                        sectionHeaderRows.forEach(rIdx => {
+                            templateRows[rIdx].forEach((val, cIdx) => {
+                                if (String(val).trim() === '-') {
+                                    const row = rIdx + 1;
+                                    const col = cIdx + 2;
+                                    const cell = worksheet.getCell(row, col);
+
+                                    // Раскрывающийся список
+                                    cell.dataValidation = {
+                                        type: 'list',
+                                        allowBlank: true,
+                                        formulae: ['"Rider,Shooter,Fighter"'],
+                                        showErrorMessage: true
+                                    };
+
+                                    // Условное форматирование: красная заливка, пока ячейка пустая
+                                    const ref = cell.address;
+                                    worksheet.addConditionalFormatting({
+                                        ref: ref,
+                                        rules: [{
+                                            type: 'expression',
+                                            formulae: [`LEN(TRIM(${ref}))=0`],
+                                            style: {
+                                                fill: {
+                                                    type: 'pattern',
+                                                    pattern: 'solid',
+                                                    bgColor: { argb: 'FFDC3545' }
+                                                }
+                                            },
+                                            priority: rulePriority++
+                                        }]
+                                    });
+                                }
+                            });
+                        });
+
+                        workbook.xlsx.writeBuffer().then(buffer => {
+                            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                            btn.href = URL.createObjectURL(blob);
+                            btn.download = 'template.xlsx';
+                        }).catch(err => {
+                            console.error("ExcelJS write error:", err);
+                            generateFallbackTemplate(templateRows, btn);
+                        });
+                        return;
+                    } catch (e) { console.error("ExcelJS error:", e); }
                 }
 
+                // --- Запасной путь: без списков и форматирования ---
+                generateFallbackTemplate(templateRows, btn);
+            } catch(e) { console.error("Init download error:", e); }
+        }
+
+        // Запасная генерация шаблона (SheetJS → CSV), если ExcelJS недоступен
+        function generateFallbackTemplate(templateRows, btn) {
+            try {
+                let dataUri = '', filename = 'template.xlsx';
+                if (typeof XLSX !== 'undefined') {
+                    const ws = XLSX.utils.aoa_to_sheet(templateRows);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Лист1');
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                    dataUri = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
+                }
                 if (!dataUri) {
-                    const csvContent = "\ufeff" + csvRows.join('\n');
+                    const csvContent = "\ufeff" + templateRows.map(r => r.join(',')).join('\n');
                     const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
                     dataUri = 'data:text/csv;charset=utf-8;base64,' + csvBase64;
                     filename = 'template.csv';
                 }
-
-                const btn = document.getElementById('download-template-btn');
-                if (btn) { btn.href = dataUri; btn.download = filename; }
-            } catch(e) { console.error("Init download error:", e); }
+                btn.href = dataUri;
+                btn.download = filename;
+            } catch(e) { console.error("Fallback template error:", e); }
         }
 
         function handleExcelUpload(event) {
@@ -665,15 +1158,29 @@
                                         let colMap = { alliance: -1, nickname: -1, lvl: -1, quantity: -1 };
                                         let headerRowIdx = -1;
                                         
+                                        // Берём БЛИЖАЙШИЙ заголовок к маркеру смены
                                         for (let r3 = r2 + 1; r3 < rows.length && r3 <= r2 + 3; r3++) {
                                             const row3 = rows[r3] || [];
                                             let foundAnyHeader = false;
                                             for (let c3 = Math.max(0, c - 2); c3 <= c + 5; c3++) {
                                                 const headerVal = String(row3[c3] || '').trim().toLowerCase();
-                                                if (headerVal.includes('alliance')) { colMap.alliance = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('nickname')) { colMap.nickname = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('lvl') || headerVal.includes('level')) { colMap.lvl = c3; foundAnyHeader = true; }
-                                                else if (headerVal.includes('quantity') || headerVal.includes('size')) { colMap.quantity = c3; foundAnyHeader = true; }
+                                                const dist = Math.abs(c3 - c);
+                                                if (headerVal.includes('alliance')) {
+                                                    if (colMap.alliance === -1 || dist < Math.abs(colMap.alliance - c)) colMap.alliance = c3;
+                                                    foundAnyHeader = true;
+                                                }
+                                                else if (headerVal.includes('nickname')) {
+                                                    if (colMap.nickname === -1 || dist < Math.abs(colMap.nickname - c)) colMap.nickname = c3;
+                                                    foundAnyHeader = true;
+                                                }
+                                                else if (headerVal.includes('lvl') || headerVal.includes('level')) {
+                                                    if (colMap.lvl === -1 || dist < Math.abs(colMap.lvl - c)) colMap.lvl = c3;
+                                                    foundAnyHeader = true;
+                                                }
+                                                else if (headerVal.includes('quantity') || headerVal.includes('size')) {
+                                                    if (colMap.quantity === -1 || dist < Math.abs(colMap.quantity - c)) colMap.quantity = c3;
+                                                    foundAnyHeader = true;
+                                                }
                                             }
                                             if (foundAnyHeader) { headerRowIdx = r3; break; }
                                         }
@@ -704,7 +1211,7 @@
 
                                             if (!nickname) { continue; }
 
-                                            const parts = [alliance, nickname, lvl, quantity].filter(p => p && p !== '*');
+                                            const parts = [alliance, nickname, lvl, quantity].filter(p => p && p !== '*' && p !== '-');
                                             if (parts.length > 0) {
                                                 if (obj) {
                                                     if (!obj[shift]) obj[shift] = [];
@@ -761,9 +1268,7 @@
             }
         });
 
-        // ===== НОВОЕ: принудительный запуск фонового видео =====
-        // Некоторые браузеры (особенно мобильные) блокируют автозапуск.
-        // Пробуем запустить сразу и повторяем при первом взаимодействии пользователя.
+        // Принудительный запуск фонового видео
         (function initBgVideo() {
             const video = document.getElementById('bg-video');
             if (!video) return;
@@ -772,7 +1277,6 @@
             document.addEventListener('DOMContentLoaded', tryPlay);
             document.addEventListener('click', tryPlay, { once: true });
             document.addEventListener('touchstart', tryPlay, { once: true });
-            // Страховка: если воспроизведение остановилось (пауза/конец) — перезапускаем
             video.addEventListener('pause', () => { if (!document.hidden) tryPlay(); });
             video.addEventListener('ended', () => tryPlay());
         })();
