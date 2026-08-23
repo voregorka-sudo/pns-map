@@ -62,7 +62,7 @@
         .shift-menu button { background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .shift-menu button:hover { background: var(--accent); color: #000; }
 
-        /* ===== ИЗМЕНЕНО: оранжевые квадратные кнопки на карте ===== */
+        /* Оранжевые квадратные кнопки на карте */
         .map-btn {
             position: absolute;
             width: 8%;
@@ -71,10 +71,10 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: var(--accent); /* оранжевый фон */
-            border: 2px solid #b87d00; /* тёмно-оранжевая рамка */
+            background: var(--accent);
+            border: 2px solid #b87d00;
             border-radius: 12px;
-            color: #000; /* чёрный текст для контраста */
+            color: #000;
             font-family: inherit;
             font-weight: bold;
             font-size: clamp(8px, 0.9vw, 12px);
@@ -374,10 +374,10 @@
         let activeShift = null;
 
         const i18n = {
-            ru: { tech: 'Техноцентр', north: 'Северная турель', south: 'Южная турель', west: 'Западная турель', east: 'Восточная турель', shift1: 'Смена 1', shift2: 'Смена 2', copy_list: 'Копировать список', copy_both: 'Копировать обе смены', list_copied: '✓ Список скопирован!', both_copied: '✓ Обе смены скопированы!', empty: 'Список пуст', login: 'Войти', logout: 'Выйти', login_title: 'Вход администратора', cancel: 'Отмена', delete: 'Удалить', confirm: 'Подтвердить', admin_panel: 'Административная панель', download_template: 'Скачать шаблон Excel', import_excel: 'Импорт из Excel', danger_zone: 'Опасная зона', delete_all: 'Удалить все списки', add_row: '+ Добавить строку', del_shift1: 'Удалить Смену 1', del_shift2: 'Удалить Смену 2', select_type: 'Тип войск (всегда англ.)', rules: 'Правила', rules_title: 'Правила', rules_empty: 'Правила пока не добавлены', rules_editor_title: 'Текст правил', rules_saved: '✓ Правила сохранены!', alliances: 'Альянсы', alliances_title: 'Альянсы', alliances_empty: 'Альянсы не найдены', alliances_found: 'Найдено альянсов', alliances_hint: 'Выберите смену, чтобы скопировать списки игроков альянса', alliance_label: 'Альянс', alliance_copied: '✓ Списки альянса скопированы!', players_count: 'игроков', both_shifts: 'Обе смены', search: 'Поиск', search_title: 'Поиск игрока', search_placeholder: 'Введите никнейм...', search_no_results: 'Ничего не найдено', search_found: 'Найдено', search_hint_click: 'Нажмите на результат, чтобы скопировать игрока', search_copied: '✓ Игрок скопирован!' },
-            en: { tech: 'Tech Center', north: 'North Turret', south: 'South Turret', west: 'West Turret', east: 'East Turret', shift1: 'Shift 1', shift2: 'Shift 2', copy_list: 'Copy list', copy_both: 'Copy both shifts', list_copied: '✓ List copied!', both_copied: '✓ Both shifts copied!', empty: 'List is empty', login: 'Log in', logout: 'Log out', login_title: 'Administrator Login', cancel: 'Cancel', delete: 'Delete', confirm: 'Confirm', admin_panel: 'Admin Panel', download_template: 'Download Excel template', import_excel: 'Import from Excel', danger_zone: 'Danger Zone', delete_all: 'Delete all lists', add_row: '+ Add row', del_shift1: 'Delete Shift 1', del_shift2: 'Delete Shift 2', select_type: 'Troop Type (EN only)', rules: 'Rules', rules_title: 'Rules', rules_empty: 'Rules have not been added yet', rules_editor_title: 'Rules text', rules_saved: '✓ Rules saved!', alliances: 'Alliances', alliances_title: 'Alliances', alliances_empty: 'No alliances found', alliances_found: 'Alliances found', alliances_hint: 'Select a shift to copy the alliance player lists', alliance_label: 'Alliance', alliance_copied: '✓ Alliance lists copied!', players_count: 'players', both_shifts: 'Both shifts', search: 'Search', search_title: 'Player Search', search_placeholder: 'Enter nickname...', search_no_results: 'Nothing found', search_found: 'Found', search_hint_click: 'Click a result to copy the player', search_copied: '✓ Player copied!' },
-            ko: { tech: '테크 센터', north: '북부 포탑', south: '남부 포탑', west: '서부 포탑', east: '동부 포탑', shift1: '교대 1', shift2: '교대 2', copy_list: '목록 복사', copy_both: '두 교대 모두 복사', list_copied: '✓ 목록이 복사되었습니다!', both_copied: '✓ 두 교대 모두 복사되었습니다!', empty: '목록이 비어 있습니다', login: '로그인', logout: '로그아웃', login_title: '관리자 로그인', cancel: '취소', delete: '삭제', confirm: '확인', admin_panel: '관리 패널', download_template: 'Excel 템플릿 다운로드', import_excel: 'Excel에서 가져오기', danger_zone: '위험 구역', delete_all: '모든 목록 삭제', add_row: '+ 행 추가', del_shift1: '교대 1 삭제', del_shift2: '교대 2 삭제', select_type: '병력 유형 (영어 전용)', rules: '규칙', rules_title: '규칙', rules_empty: '규칙이 아직 추가되지 않았습니다', rules_editor_title: '규칙 텍스트', rules_saved: '✓ 규칙이 저장되었습니다!', alliances: '동맹', alliances_title: '동맹', alliances_empty: '동맹을 찾을 수 없습니다', alliances_found: '발견된 동맹', alliances_hint: '교대를 선택하면 해당 동맹 플레이어 목록이 복사됩니다', alliance_label: '동맹', alliance_copied: '✓ 동맹 목록이 복사되었습니다!', players_count: '명', both_shifts: '두 교대 모두', search: '검색', search_title: '플레이어 검색', search_placeholder: '닉네임을 입력하세요...', search_no_results: '결과가 없습니다', search_found: '결과', search_hint_click: '결과를 클릭하면 플레이어가 복사됩니다', search_copied: '✓ 플레이어가 복사되었습니다!' },
-            ja: { tech: 'テックセンター', north: '北タレット', south: '南タレット', west: '西タレット', east: '東タレット', shift1: 'シフト 1', shift2: 'シフト 2', copy_list: 'リストをコピー', copy_both: '両方のシフトをコピー', list_copied: '✓ リストがコピーされました！', both_copied: '✓ 両方のシフトがコピーされました！', empty: 'リストは空です', login: 'ログイン', logout: 'ログアウト', login_title: '管理者ログイン', cancel: 'キャンセル', delete: '削除', confirm: '確認', admin_panel: '管理パネル', download_template: 'Excelテンプレートをダウンロード', import_excel: 'Excelからインポート', danger_zone: '危険区域', delete_all: 'すべてのリストを削除', add_row: '+ 行を追加', del_shift1: 'シフト1を削除', del_shift2: 'シフト2を削除', select_type: '部隊タイプ (英語のみ)', rules: 'ルール', rules_title: 'ルール', rules_empty: 'ルールはまだ追加されていません', rules_editor_title: 'ルールのテキスト', rules_saved: '✓ ルールが保存されました！', alliances: '同盟', alliances_title: '同盟', alliances_empty: '同盟が見つかりません', alliances_found: '見つかった同盟', alliances_hint: 'シフトを選ぶとその同盟のプレイヤーリストがコピーされます', alliance_label: '同盟', alliance_copied: '✓ 同盟のリストがコピーされました！', players_count: '人', both_shifts: '両方のシフト', search: '検索', search_title: 'プレイヤー検索', search_placeholder: 'ニックネームを入力...', search_no_results: '見つかりませんでした', search_found: '検索結果', search_hint_click: '結果をクリックするとプレイヤーがコピーされます', search_copied: '✓ プレイヤーがコピーされました！' }
+            ru: { tech: 'Техноцентр', north: 'Северная турель', south: 'Южная турель', west: 'Западная турель', east: 'Восточная турель', shift1: 'Смена 1', shift2: 'Смена 2', copy_list: 'Копировать список', copy_both: 'Копировать обе смены', list_copied: '✓ Список скопирован!', both_copied: '✓ Обе смены скопированы!', empty: 'Список пуст', login: 'Войти', logout: 'Выйти', login_title: 'Вход администратора', cancel: 'Отмена', delete: 'Удалить', confirm: 'Подтвердить', admin_panel: 'Административная панель', download_template: 'Скачать шаблон Excel', import_excel: 'Импорт из Excel', danger_zone: 'Опасная зона', delete_all: 'Удалить все списки', add_row: '+ Добавить строку', del_shift1: 'Удалить Смену 1', del_shift2: 'Удалить Смену 2', select_type: 'Тип войск (всегда англ.)', rules: 'Правила', rules_title: 'Правила', rules_empty: 'Правила пока не добавлены', rules_editor_title: 'Текст правил', rules_saved: '✓ Правила сохранены!', alliances: 'Альянсы', alliances_title: 'Альянсы', alliances_empty: 'Альянсы не найдены', alliances_found: 'Найдено альянсов', alliances_hint: 'Выберите смену, чтобы скопировать списки игроков альянса', alliance_label: 'Альянс', alliance_copied: '✓ Списки альянса скопированы!', players_count: 'игроков', both_shifts: 'Обе смены', search: 'Поиск', search_title: 'Поиск игрока', search_placeholder: 'Введите никнейм...', search_no_results: 'Ничего не найдено', search_found: 'Найдено', search_hint_click: 'Нажмите на игрока, чтобы скопировать все его записи', search_copied: '✓ Игрок скопирован!' },
+            en: { tech: 'Tech Center', north: 'North Turret', south: 'South Turret', west: 'West Turret', east: 'East Turret', shift1: 'Shift 1', shift2: 'Shift 2', copy_list: 'Copy list', copy_both: 'Copy both shifts', list_copied: '✓ List copied!', both_copied: '✓ Both shifts copied!', empty: 'List is empty', login: 'Log in', logout: 'Log out', login_title: 'Administrator Login', cancel: 'Cancel', delete: 'Delete', confirm: 'Confirm', admin_panel: 'Admin Panel', download_template: 'Download Excel template', import_excel: 'Import from Excel', danger_zone: 'Danger Zone', delete_all: 'Delete all lists', add_row: '+ Add row', del_shift1: 'Delete Shift 1', del_shift2: 'Delete Shift 2', select_type: 'Troop Type (EN only)', rules: 'Rules', rules_title: 'Rules', rules_empty: 'Rules have not been added yet', rules_editor_title: 'Rules text', rules_saved: '✓ Rules saved!', alliances: 'Alliances', alliances_title: 'Alliances', alliances_empty: 'No alliances found', alliances_found: 'Alliances found', alliances_hint: 'Select a shift to copy the alliance player lists', alliance_label: 'Alliance', alliance_copied: '✓ Alliance lists copied!', players_count: 'players', both_shifts: 'Both shifts', search: 'Search', search_title: 'Player Search', search_placeholder: 'Enter nickname...', search_no_results: 'Nothing found', search_found: 'Found', search_hint_click: 'Click a player to copy all their entries', search_copied: '✓ Player copied!' },
+            ko: { tech: '테크 센터', north: '북부 포탑', south: '남부 포탑', west: '서부 포탑', east: '동부 포탑', shift1: '교대 1', shift2: '교대 2', copy_list: '목록 복사', copy_both: '두 교대 모두 복사', list_copied: '✓ 목록이 복사되었습니다!', both_copied: '✓ 두 교대 모두 복사되었습니다!', empty: '목록이 비어 있습니다', login: '로그인', logout: '로그아웃', login_title: '관리자 로그인', cancel: '취소', delete: '삭제', confirm: '확인', admin_panel: '관리 패널', download_template: 'Excel 템플릿 다운로드', import_excel: 'Excel에서 가져오기', danger_zone: '위험 구역', delete_all: '모든 목록 삭제', add_row: '+ 행 추가', del_shift1: '교대 1 삭제', del_shift2: '교대 2 삭제', select_type: '병력 유형 (영어 전용)', rules: '규칙', rules_title: '규칙', rules_empty: '규칙이 아직 추가되지 않았습니다', rules_editor_title: '규칙 텍스트', rules_saved: '✓ 규칙이 저장되었습니다!', alliances: '동맹', alliances_title: '동맹', alliances_empty: '동맹을 찾을 수 없습니다', alliances_found: '발견된 동맹', alliances_hint: '교대를 선택하면 해당 동맹 플레이어 목록이 복사됩니다', alliance_label: '동맹', alliance_copied: '✓ 동맹 목록이 복사되었습니다!', players_count: '명', both_shifts: '두 교대 모두', search: '검색', search_title: '플레이어 검색', search_placeholder: '닉네임을 입력하세요...', search_no_results: '결과가 없습니다', search_found: '결과', search_hint_click: '플레이어를 클릭하면 모든 기록이 복사됩니다', search_copied: '✓ 플레이어가 복사되었습니다!' },
+            ja: { tech: 'テックセンター', north: '北タレット', south: '南タレット', west: '西タレット', east: '東タレット', shift1: 'シフト 1', shift2: 'シフト 2', copy_list: 'リストをコピー', copy_both: '両方のシフトをコピー', list_copied: '✓ リストがコピーされました！', both_copied: '✓ 両方のシフトがコピーされました！', empty: 'リストは空です', login: 'ログイン', logout: 'ログアウト', login_title: '管理者ログイン', cancel: 'キャンセル', delete: '削除', confirm: '確認', admin_panel: '管理パネル', download_template: 'Excelテンプレートをダウンロード', import_excel: 'Excelからインポート', danger_zone: '危険区域', delete_all: 'すべてのリストを削除', add_row: '+ 行を追加', del_shift1: 'シフト1を削除', del_shift2: 'シフト2を削除', select_type: '部隊タイプ (英語のみ)', rules: 'ルール', rules_title: 'ルール', rules_empty: 'ルールはまだ追加されていません', rules_editor_title: 'ルールのテキスト', rules_saved: '✓ ルールが保存されました！', alliances: '同盟', alliances_title: '同盟', alliances_empty: '同盟が見つかりません', alliances_found: '見つかった同盟', alliances_hint: 'シフトを選ぶとその同盟のプレイヤーリストがコピーされます', alliance_label: '同盟', alliance_copied: '✓ 同盟のリストがコピーされました！', players_count: '人', both_shifts: '両方のシフト', search: '検索', search_title: 'プレイヤー検索', search_placeholder: 'ニックネームを入力...', search_no_results: '見つかりませんでした', search_found: '検索結果', search_hint_click: 'プレイヤーをクリックすると、そのすべての記録がコピーされます', search_copied: '✓ プレイヤーがコピーされました！' }
         };
 
         function formatListForCopy(arr) {
@@ -624,7 +624,9 @@
                 escapeHtml(entry.substring(idx + query.length));
         }
 
-        // Живой поиск по мере ввода: по всем зданиям и обеим сменам
+        // ===== ИЗМЕНЕНО: Живой поиск — клик копирует ВСЕ записи игрока =====
+        // Если игрок (одинаковая запись) найден в нескольких зданиях/сменах,
+        // нажатие на любой его результат копирует все вхождения сразу.
         function performSearch() {
             const input = document.getElementById('search-input');
             const resultsDiv = document.getElementById('search-results');
@@ -652,6 +654,10 @@
                 resultsDiv.innerHTML = `<p class="empty-list">${i18n[currentLang].search_no_results}</p>`;
                 return;
             }
+
+            // Подсчёт вхождений каждой записи (игрок может быть в нескольких списках)
+            const entryCounts = {};
+            results.forEach(r => { entryCounts[r.entry] = (entryCounts[r.entry] || 0) + 1; });
 
             const info = document.createElement('p');
             info.style.cssText = 'text-align:center; color:#888; font-size:13px; margin-bottom:6px;';
@@ -682,6 +688,8 @@
                 let posText = '#' + (res.idx + 1);
                 if (res.idx === 0) { posText += ' (cap)'; posSpan.style.color = 'var(--cap-color)'; posSpan.style.fontWeight = 'bold'; }
                 else if (res.idx === 1) { posText += ' (sub)'; posSpan.style.color = 'var(--sub-color)'; posSpan.style.fontWeight = 'bold'; }
+                // Бейдж ×N: игрок встречается несколько раз — клик скопирует все записи
+                if (entryCounts[res.entry] > 1) posText += ` ×${entryCounts[res.entry]}`;
                 posSpan.innerText = posText;
                 meta.appendChild(posSpan);
                 item.appendChild(meta);
@@ -692,14 +700,19 @@
                 entryDiv.innerHTML = highlightMatch(res.entry, query);
                 item.appendChild(entryDiv);
 
-                // ===== ИЗМЕНЕНО: копируется здание, смена, тип войск + запись игрока =====
+                // Клик: собираем ВСЕ вхождения этого игрока и копируем одним текстом
                 item.onclick = () => {
-                    let loc = `${res.obj['name_' + currentLang]} — ${i18n[currentLang][res.shift]}`;
-                    if (res.obj.tag) loc += ` — ${res.obj.tag}`;
-                    let line = res.entry;
-                    if (res.idx === 0) line += ' (cap)';
-                    else if (res.idx === 1) line += ' (sub)';
-                    copyText(loc + '\n' + line, i18n[currentLang].search_copied);
+                    const samePlayer = results.filter(r => r.entry === res.entry);
+                    const lines = [];
+                    samePlayer.forEach(r => {
+                        let loc = `${r.obj['name_' + currentLang]} — ${i18n[currentLang][r.shift]}`;
+                        if (r.obj.tag) loc += ` — ${r.obj.tag}`;
+                        let line = r.entry;
+                        if (r.idx === 0) line += ' (cap)';
+                        else if (r.idx === 1) line += ' (sub)';
+                        lines.push(loc + '\n' + line);
+                    });
+                    copyText(lines.join('\n\n'), i18n[currentLang].search_copied);
                 };
                 resultsDiv.appendChild(item);
             });
