@@ -613,6 +613,24 @@
             return s.toLowerCase();
         }
 
+        // ===== НОВОЕ: извлечение никнейма из записи "Альянс-Ник-Уровень-Кол-во" =====
+        // Ник может содержать дефисы, поэтому отсекаем только первую часть (альянс)
+// и хвост (уровень T9..T14 + количество).
+        function extractNickname(entry) {
+            const parts = String(entry).split('-');
+            if (parts.length >= 4) {
+                const isLvl = /^[tт]\d+$/i.test(parts[parts.length - 2]);
+                const isQty = /^\d+$/.test(parts[parts.length - 1]);
+                if (isLvl && isQty) return parts.slice(1, parts.length - 2).join('-');
+            }
+            if (parts.length >= 3) {
+                const isLvl = /^[tт]\d+$/i.test(parts[parts.length - 1]);
+                if (isLvl) return parts.slice(1, parts.length - 1).join('-');
+            }
+            if (parts.length === 2) return parts[1];
+            return String(entry);
+        }
+
         // Подсветка найденного фрагмента (безопасно: части экранируются отдельно)
         function highlightMatch(entry, query) {
             const lowerEntry = entry.toLowerCase();
@@ -624,9 +642,7 @@
                 escapeHtml(entry.substring(idx + query.length));
         }
 
-        // ===== ИЗМЕНЕНО: Живой поиск — клик копирует ВСЕ записи игрока =====
-        // Если игрок (одинаковая запись) найден в нескольких зданиях/сменах,
-        // нажатие на любой его результат копирует все вхождения сразу.
+        // Живой поиск — клик копирует ВСЕ записи игрока (по нику, а не по точной записи)
         function performSearch() {
             const input = document.getElementById('search-input');
             const resultsDiv = document.getElementById('search-results');
@@ -655,9 +671,14 @@
                 return;
             }
 
-            // Подсчёт вхождений каждой записи (игрок может быть в нескольких списках)
-            const entryCounts = {};
-            results.forEach(r => { entryCounts[r.entry] = (entryCounts[r.entry] || 0) + 1; });
+            // ===== ИЗМЕНЕНО: подсчёт вхождений каждого игрока ПО НИКУ =====
+            // Игрок считается «тем же», если у него такой же ник — даже если
+            // уровень (T10/T11) или количество отличаются в разных списках.
+            const nickCounts = {};
+            results.forEach(r => {
+                const n = normSearch(extractNickname(r.entry));
+                nickCounts[n] = (nickCounts[n] || 0) + 1;
+            });
 
             const info = document.createElement('p');
             info.style.cssText = 'text-align:center; color:#888; font-size:13px; margin-bottom:6px;';
@@ -688,8 +709,9 @@
                 let posText = '#' + (res.idx + 1);
                 if (res.idx === 0) { posText += ' (cap)'; posSpan.style.color = 'var(--cap-color)'; posSpan.style.fontWeight = 'bold'; }
                 else if (res.idx === 1) { posText += ' (sub)'; posSpan.style.color = 'var(--sub-color)'; posSpan.style.fontWeight = 'bold'; }
-                // Бейдж ×N: игрок встречается несколько раз — клик скопирует все записи
-                if (entryCounts[res.entry] > 1) posText += ` ×${entryCounts[res.entry]}`;
+                // ===== ИЗМЕНЕНО: бейдж ×N — по нику игрока =====
+                const resNick = normSearch(extractNickname(res.entry));
+                if (nickCounts[resNick] > 1) posText += ` ×${nickCounts[resNick]}`;
                 posSpan.innerText = posText;
                 meta.appendChild(posSpan);
                 item.appendChild(meta);
@@ -700,9 +722,11 @@
                 entryDiv.innerHTML = highlightMatch(res.entry, query);
                 item.appendChild(entryDiv);
 
-                // Клик: собираем ВСЕ вхождения этого игрока и копируем одним текстом
+                // ===== ИЗМЕНЕНО: клик копирует ВСЕ записи игрока с таким же ником =====
+                // (в разных зданиях/сменах, с разным уровнем или количеством — все варианты)
                 item.onclick = () => {
-                    const samePlayer = results.filter(r => r.entry === res.entry);
+                    const nick = normSearch(extractNickname(res.entry));
+                    const samePlayer = results.filter(r => normSearch(extractNickname(r.entry)) === nick);
                     const lines = [];
                     samePlayer.forEach(r => {
                         let loc = `${r.obj['name_' + currentLang]} — ${i18n[currentLang][r.shift]}`;
