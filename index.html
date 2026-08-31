@@ -1305,11 +1305,17 @@
             }
         });
 
-        // Принудительный запуск фонового видео
+                // Принудительный запуск фонового видео + диагностика
         (function initBgVideo() {
             const video = document.getElementById('bg-video');
             if (!video) return;
-            const tryPlay = () => { video.play().catch(() => {}); };
+
+            // Диагностика: открыть консоль (F12 → Console) и обновить страницу
+            video.addEventListener('loadeddata', () => console.log('✅ Видео загружено и играет'));
+            video.addEventListener('error', () => console.error('❌ Ошибка: файл не найден (проверьте имя и регистр!) или формат не поддерживается (нужен MP4/H.264)'));
+            video.addEventListener('stalled', () => console.warn('⚠️ Загрузка видео застопорилась — файл слишком большой?'));
+
+            const tryPlay = () => { video.play().catch(err => console.warn('Автозапуск заблокирован:', err.name)); };
             tryPlay();
             document.addEventListener('DOMContentLoaded', tryPlay);
             document.addEventListener('click', tryPlay, { once: true });
